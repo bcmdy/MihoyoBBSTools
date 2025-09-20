@@ -39,3 +39,4 @@ jobs:
         env:
           cookie: ${{ secrets.COOKIE }}   # 🍪 用户 Cookie
           stoken: ${{ secrets.STOKEN }}   # 🔑 登录态 Token
+          CAPTCHA_ENDPOINT: ${{ secrets.CAPTCHA_ENDPOINT }}  # 🔑 验证码 API 端点
