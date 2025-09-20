@@ -26,10 +26,9 @@ class StatusCode(Enum):
 
 
 def check_github_actions() -> None:
-    """检查是否在GitHub Actions环境运行"""
+    """检查是否在 GitHub Actions 环境运行"""
     if os.getenv('GITHUB_ACTIONS') == 'true':
-        log.error("请不要在 GitHub Action 运行本项目")
-        exit(0)
+        log.info("检测到 GitHub Actions 环境，跳过本地运行限制")
 
 
 def initialize_config() -> Tuple[bool, Optional[str]]:
@@ -38,6 +37,12 @@ def initialize_config() -> Tuple[bool, Optional[str]]:
     if not config.config["enable"]:
         log.warning("Config 未启用！")
         return False, "Config 未启用！"
+
+    # ✅ 从 GitHub Actions 环境变量读取 cookie 和 stoken
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        config.config['account']['cookie'] = os.getenv('cookie', '')
+        config.config['account']['stoken'] = os.getenv('stoken', '')
+
     return True, None
 
 
@@ -45,14 +50,14 @@ def handle_login() -> None:
     """处理登录逻辑"""
     account_cfg = config.config["account"]
     if any([
-        account_cfg["stuid"] == "",
-        account_cfg["stoken"] == "",
-        account_cfg["mid"] == ""
+        account_cfg.get("stuid") == "",
+        account_cfg.get("stoken") == "",
+        account_cfg.get("mid") == ""
     ]):
         if config.config["mihoyobbs"]["enable"]:
             login.login()
             time.sleep(random.randint(3, 8))
-        account_cfg["cookie"] = tools.tidy_cookie(account_cfg["cookie"])
+        account_cfg["cookie"] = tools.tidy_cookie(account_cfg.get("cookie", ""))
 
 
 def run_mihoyobbs() -> Tuple[str, bool]:
@@ -142,16 +147,17 @@ def main() -> Tuple[int, str]:
 
 def task_run() -> None:
     """任务运行入口"""
-
     try:
         status_code, message = main()
         push_message = message
-    except CookieError:
+    except CookieError as e:
         status_code = StatusCode.FAILURE.value
+        message = str(e)
         push_message = f"账号 Cookie 出错！\n{message}"
         log.error("账号 Cookie 有问题！")
-    except StokenError:
+    except StokenError as e:
         status_code = StatusCode.FAILURE.value
+        message = str(e)
         push_message = f"账号 Stoken 出错！\n{message}"
         log.error("账号 Stoken 有问题！")
 
