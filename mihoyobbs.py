@@ -84,10 +84,16 @@ class Mihoyobbs:
         data = req.json()
         if data["retcode"] != 0:
             return None
-        validate = captcha.bbs_captcha(data["data"]["gt"], data["data"]["challenge"])
-        if validate is not None:
+        captcha_result = captcha.bbs_captcha(data["data"]["gt"], data["data"]["challenge"])
+        if captcha_result is not None:
+            challenge = data["data"]["challenge"]
+            if isinstance(captcha_result, dict):
+                validate = captcha_result["validate"]
+                challenge = captcha_result["challenge"]
+            else:
+                validate = captcha_result
             check_req = http.post(url=setting.bbs_captcha_verify, headers=self.headers,
-                                  json={"geetest_challenge": data["data"]["challenge"],
+                                  json={"geetest_challenge": challenge,
                                         "geetest_seccode": validate + "|jordan",
                                         "geetest_validate": validate})
             check = check_req.json()
